@@ -356,29 +356,33 @@ Three D1 tables (migrations in `migrations/`):
 
 ---
 
-## Deployment
+## Deployment (Cloudflare Pages)
 
-### Vercel (Recommended)
+This application is designed to run entirely on the Cloudflare platform — Pages hosts the site, R2 stores photos, Stream handles video, D1 provides the database, and Workers AI moderates content. Keeping everything on Cloudflare gives you the best performance, simplest configuration, and direct access to all service bindings.
 
-1. Push this repo to GitHub
-2. Import into Vercel
-3. Add all environment variables from `.env.example`
-4. Deploy
+### Setup
 
-### Cloudflare Pages
+1. Go to **Cloudflare Dashboard > Workers & Pages > Create**
+2. Select **Connect to Git** and link this repository
+3. Configure the build:
+   - **Framework preset**: Next.js
+   - **Build command**: `npm run build`
+   - **Output directory**: `.next`
+4. Add all environment variables from `.env.example` under **Settings > Environment Variables**
+5. Bind your D1 database under **Settings > Bindings**:
+   - Variable name: `DB`
+   - D1 database: `triphut-db`
+6. Deploy
 
-1. Connect your GitHub repo in Cloudflare Pages
-2. Build command: `npm run build`
-3. Output directory: `.next`
-4. Add environment variables
-5. Bind your D1 database in Pages > Settings > Bindings
+### Custom Domain
 
-### Self-Hosted
+1. Go to **Pages > your project > Custom Domains**
+2. Add your domain (e.g., `app.triphunt.io`)
+3. Cloudflare handles SSL automatically
 
-```bash
-npm run build
-npm run start
-```
+### Preview Deployments
+
+Cloudflare Pages automatically creates preview deployments for every push to non-production branches, which is useful for staging and QA.
 
 ---
 
