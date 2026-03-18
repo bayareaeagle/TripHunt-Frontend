@@ -1,0 +1,11 @@
+{
+  "rules": [
+    {
+      "allowedOrigins": ["http://localhost:3000", "http://localhost:3001", "https://*.triphunt.io"],
+      "allowedMethods": ["GET", "PUT", "POST", "HEAD"],
+      "allowedHeaders": ["*"],
+      "exposeHeaders": ["ETag"],
+      "maxAgeSeconds": 3600
+    }
+  ]
+}
