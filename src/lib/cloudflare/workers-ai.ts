@@ -1,5 +1,6 @@
+import { cfAuthHeaders } from "./auth";
+
 const ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID!;
-const API_TOKEN = process.env.CLOUDFLARE_API_TOKEN!;
 
 const AI_BASE = `https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/ai/run`;
 const NSFW_MODEL = "@cf/microsoft/resnet-50";
@@ -21,9 +22,7 @@ export async function moderateImage(imageBytes: Uint8Array): Promise<{
   try {
     const res = await fetch(`${AI_BASE}/${NSFW_MODEL}`, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${API_TOKEN}`,
-      },
+      headers: cfAuthHeaders(),
       body: imageBytes.buffer as ArrayBuffer,
     });
 

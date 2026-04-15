@@ -3,12 +3,12 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X, Send } from "lucide-react";
-import { buttonVariants } from "@/components/ui/button-variants";
+import { Menu, X } from "lucide-react";
 import { WalletConnectButton } from "@/components/wallet/WalletConnectButton";
 
 const navLinks = [
   { href: "/trips", label: "Explore Trips" },
+  { href: "/submit", label: "Submit" },
   { href: "/vote", label: "Vote" },
   { href: "/benefits", label: "Benefits" },
   { href: "/membership", label: "Membership" },
@@ -50,13 +50,6 @@ export function Navbar() {
 
         {/* Actions */}
         <div className="hidden items-center gap-2 lg:flex">
-          <Link
-            href="/submit"
-            className={buttonVariants({ size: "sm", className: "gap-1.5" })}
-          >
-            <Send className="h-3.5 w-3.5" />
-            Submit Request
-          </Link>
           <WalletConnectButton />
         </div>
 
@@ -84,14 +77,6 @@ export function Navbar() {
               </Link>
             ))}
             <div className="space-y-2 pt-3">
-              <Link
-                href="/submit"
-                onClick={() => setMobileOpen(false)}
-                className={buttonVariants({ size: "sm", className: "w-full gap-1.5" })}
-              >
-                <Send className="h-3.5 w-3.5" />
-                Submit Request
-              </Link>
               <WalletConnectButton />
             </div>
           </nav>
