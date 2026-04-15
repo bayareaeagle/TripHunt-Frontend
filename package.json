@@ -7,8 +7,11 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "d1:migrate": "wrangler d1 execute triphut-db --file=./migrations/001_create_proposal_media.sql && wrangler d1 execute triphut-db --file=./migrations/002_create_proposals.sql && wrangler d1 execute triphut-db --file=./migrations/003_create_proposal_votes.sql",
-    "d1:migrate:local": "wrangler d1 execute triphut-db --local --file=./migrations/001_create_proposal_media.sql && wrangler d1 execute triphut-db --local --file=./migrations/002_create_proposals.sql && wrangler d1 execute triphut-db --local --file=./migrations/003_create_proposal_votes.sql"
+    "postinstall": "node scripts/patch-opennext.mjs",
+    "cf:build": "next build --webpack && node scripts/patch-opennext.mjs && opennextjs-cloudflare build --skipNextBuild",
+    "cf:deploy": "npm run cf:build && opennextjs-cloudflare deploy",
+    "d1:migrate": "wrangler d1 execute triphunt-media --file=./migrations/001_create_proposal_media.sql && wrangler d1 execute triphunt-media --file=./migrations/002_create_proposals.sql && wrangler d1 execute triphunt-media --file=./migrations/003_create_proposal_votes.sql",
+    "d1:migrate:local": "wrangler d1 execute triphunt-media --local --file=./migrations/001_create_proposal_media.sql && wrangler d1 execute triphunt-media --local --file=./migrations/002_create_proposals.sql && wrangler d1 execute triphunt-media --local --file=./migrations/003_create_proposal_votes.sql"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1008.0",
@@ -34,6 +37,7 @@
     "zustand": "^5.0.11"
   },
   "devDependencies": {
+    "@opennextjs/cloudflare": "^1.18.1",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -42,6 +46,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.6",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "wrangler": "^4.82.2"
   }
 }

@@ -1,0 +1,38 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "triphunt-frontend",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-04-11",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "binding": "ASSETS",
+    "directory": ".open-next/assets"
+  },
+  "d1_databases": [
+    { "binding": "DB", "database_name": "triphunt-media", "database_id": "9fe2b342-e896-44f4-8320-806d5f40687f" }
+  ],
+  "r2_buckets": [
+    { "binding": "MEDIA_BUCKET", "bucket_name": "triphunt-media" }
+  ],
+  "durable_objects": {
+    "bindings": [
+      { "name": "NEXT_CACHE_DO_QUEUE", "class_name": "DOQueueHandler" },
+      { "name": "NEXT_TAG_CACHE_D1_SHARDED", "class_name": "DOShardedTagCache" },
+      { "name": "NEXT_CACHE_DO_PURGE", "class_name": "BucketCachePurge" }
+    ]
+  },
+  "migrations": [
+    { "tag": "v4", "new_sqlite_classes": ["DOQueueHandler", "DOShardedTagCache", "BucketCachePurge"] }
+  ],
+  "vars": {
+    "CLOUDFLARE_ACCOUNT_ID": "4bea4ab4e7d785377588fd4c7f8a7cec",
+    "D1_DATABASE_ID": "9fe2b342-e896-44f4-8320-806d5f40687f",
+    "NEXT_PUBLIC_CARDANO_NETWORK": "preprod",
+    "NEXT_PUBLIC_PLATFORM_FEE_PERCENT": "3",
+    "NEXT_PUBLIC_R2_PUBLIC_URL": "https://pub-0ee2d32cd2a1427d8ed7d53dd36949b6.r2.dev",
+    "NEXT_PUBLIC_BLOCKFROST_API_KEY": "preprodHJWLTRnSutUxQNndMcxrlUrVxC29OuuL",
+    "R2_BUCKET_NAME": "triphunt-media",
+    "R2_ENDPOINT": "https://4bea4ab4e7d785377588fd4c7f8a7cec.r2.cloudflarestorage.com",
+    "CLOUDFLARE_EMAIL": "john@agrowlabs.co"
+  }
+}
