@@ -8,6 +8,7 @@ import { WalletConnectButton } from "@/components/wallet/WalletConnectButton";
 
 const navLinks = [
   { href: "/trips", label: "Explore Trips" },
+  { href: "/submit", label: "Submit" },
   { href: "/vote", label: "Vote" },
   { href: "/benefits", label: "Benefits" },
   { href: "/membership", label: "Membership" },
