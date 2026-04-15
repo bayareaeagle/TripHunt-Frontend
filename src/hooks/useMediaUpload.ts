@@ -68,22 +68,52 @@ async function apiPost<T>(url: string, body: unknown): Promise<T> {
   return data as T;
 }
 
-function uploadWithProgress(
-  url: string,
+/**
+ * Upload a photo via the Worker (`/api/media/photo/upload`), which streams
+ * the bytes into R2 through the `MEDIA_BUCKET` binding. Returns the
+ * server's response payload (mediaId, r2Key, status, thumbnailUrl).
+ *
+ * This replaces the older presign + direct PUT flow — that flow needed
+ * R2 S3-compatible access keys, which the Cloudflare Global API Key
+ * cannot mint. Routing through the Worker uses the binding instead.
+ */
+function uploadPhotoViaWorker(
   file: File,
-  contentType: string,
+  walletAddr: string,
+  proposalId: string,
   onProgress: (pct: number) => void,
-): Promise<void> {
+): Promise<{
+  mediaId: string;
+  r2Key: string;
+  status: string;
+  thumbnailUrl: string | null;
+}> {
   return new Promise((resolve, reject) => {
+    const form = new FormData();
+    form.append("file", file);
+    form.append("walletAddr", walletAddr);
+    form.append("proposalId", proposalId);
     const xhr = new XMLHttpRequest();
-    xhr.open("PUT", url);
-    xhr.setRequestHeader("Content-Type", contentType);
+    xhr.open("POST", "/api/media/photo/upload");
     xhr.upload.onprogress = (e) => {
       if (e.lengthComputable) onProgress(Math.round((e.loaded / e.total) * 100));
     };
-    xhr.onload = () => (xhr.status >= 200 && xhr.status < 300 ? resolve() : reject(new Error(`Upload failed: ${xhr.status}`)));
+    xhr.onload = () => {
+      if (xhr.status < 200 || xhr.status >= 300) {
+        let msg = `Upload failed: ${xhr.status}`;
+        try {
+          msg = JSON.parse(xhr.responseText)?.error ?? msg;
+        } catch {}
+        return reject(new Error(msg));
+      }
+      try {
+        resolve(JSON.parse(xhr.responseText));
+      } catch (err) {
+        reject(err instanceof Error ? err : new Error("Bad response"));
+      }
+    };
     xhr.onerror = () => reject(new Error("Upload network error"));
-    xhr.send(file);
+    xhr.send(form);
   });
 }
 
@@ -199,54 +229,38 @@ export const useMediaUpload = create<MediaUploadState>((set, get) => ({
 
       const doUpload = async () => {
         try {
-          // Step 1: Get presigned PUT URL from our API
-          const presign = await apiPost<{
-            uploadUrl: string;
-            mediaId: string;
-            r2Key: string;
-          }>("/api/media/photo/presign", {
+          updatePhoto({ status: "uploading" as const });
+
+          // Single-step: stream the file to /api/media/photo/upload, which
+          // writes it to R2 via the Worker's MEDIA_BUCKET binding and runs
+          // moderation. No presign/direct-PUT (R2 access keys not needed).
+          const result = await uploadPhotoViaWorker(
+            file,
             walletAddr,
             proposalId,
-            contentType: file.type,
-            fileSize: file.size,
-          });
-
-          updatePhoto({
-            mediaId: presign.mediaId,
-            r2Key: presign.r2Key,
-            status: "uploading" as const,
-          });
-
-          // Update the tempId reference for subsequent state updates
-          const realMediaId = presign.mediaId;
-          const updateByRealId = (updates: Partial<PhotoItem>) => {
-            set({
-              photos: get().photos.map((p) =>
-                p.mediaId === realMediaId ? { ...p, ...updates } : p,
-              ),
-            });
-          };
-
-          // Step 2: PUT file directly to R2 via presigned URL (fast, no server proxy)
-          await uploadWithProgress(presign.uploadUrl, file, file.type, (pct) =>
-            updateByRealId({ progress: pct }),
+            (pct) => updatePhoto({ progress: pct }),
           );
 
-          updateByRealId({ status: "confirming" as const, progress: 100 });
-
-          // Step 3: Confirm upload + trigger background moderation
-          const confirm = await apiPost<{
-            status: string;
-            thumbnailUrl: string | null;
-          }>("/api/media/photo/confirm", {
-            mediaId: presign.mediaId,
-            walletAddr,
-          });
-
-          updateByRealId({
-            status: confirm.status === "approved" ? ("approved" as const) : ("rejected" as const),
-            thumbnailUrl: confirm.thumbnailUrl,
-            error: confirm.status === "rejected" ? "Content flagged by moderation" : null,
+          set({
+            photos: get().photos.map((p) =>
+              p.mediaId === tempId
+                ? {
+                    ...p,
+                    mediaId: result.mediaId,
+                    r2Key: result.r2Key,
+                    progress: 100,
+                    status:
+                      result.status === "approved"
+                        ? ("approved" as const)
+                        : ("rejected" as const),
+                    thumbnailUrl: result.thumbnailUrl,
+                    error:
+                      result.status === "rejected"
+                        ? "Content flagged by moderation"
+                        : null,
+                  }
+                : p,
+            ),
           });
         } catch (err) {
           updatePhoto({
