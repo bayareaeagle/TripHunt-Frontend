@@ -65,6 +65,7 @@ export default function SubmitPage() {
     hasUploadsInProgress,
     hasRejected,
     finalizeMedia,
+    orderedPhotoUrls,
     reset: resetMedia,
   } = useMediaUpload();
 
@@ -98,6 +99,7 @@ export default function SubmitPage() {
       description,
       amount: parsedAmount,
       currency,
+      mediaUrls: orderedPhotoUrls(),
     });
   }
 

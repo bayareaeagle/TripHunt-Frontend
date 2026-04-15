@@ -106,9 +106,21 @@ function D1ProposalCard({
   const departureDate = new Date(proposal.departureDate);
   const returnDate = new Date(proposal.returnDate);
   const createdAt = new Date(proposal.createdAt);
+  const coverImage = proposal.mediaUrls?.[0] ?? null;
 
   return (
     <div className="rounded-xl border border-border bg-white shadow-sm transition-shadow hover:shadow-md overflow-hidden">
+      {/* Cover image */}
+      {coverImage && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={coverImage}
+          alt={proposal.destination}
+          className="h-40 w-full object-cover"
+          loading="lazy"
+        />
+      )}
+
       {/* Card body */}
       <div className="p-5">
         {/* Header */}

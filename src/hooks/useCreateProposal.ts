@@ -35,6 +35,11 @@ export interface TripFormData {
   amount: number;
   /** Currency symbol */
   currency: string;
+  /**
+   * Public R2 URLs of approved photos, with the user-chosen cover first.
+   * Persisted in the proposal's media_urls JSON column.
+   */
+  mediaUrls?: string[];
 }
 
 /** Submit proposal to D1 API (used for non-mainnet / preprod testing). */
@@ -53,7 +58,7 @@ async function submitToD1(
       amount: formData.amount,
       currency: formData.currency,
       walletAddress,
-      mediaUrls: [], // media is already stored via the media upload flow
+      mediaUrls: formData.mediaUrls ?? [],
     }),
   });
 

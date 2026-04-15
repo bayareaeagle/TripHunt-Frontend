@@ -35,6 +35,11 @@ interface MediaUploadState {
   walletAddr: string;
   photos: PhotoItem[];
   video: VideoItem | null;
+  /**
+   * mediaId of the photo the user picked as the proposal cover. If null,
+   * the first approved photo is used (selectThumbnailUrl helper).
+   */
+  thumbnailMediaId: string | null;
 
   setProposalId: (id: string) => void;
   setWalletAddr: (addr: string) => void;
@@ -43,6 +48,11 @@ interface MediaUploadState {
   uploadPhoto: (file: File) => Promise<void>;
   uploadPhotos: (files: File[]) => void;
   removePhoto: (mediaId: string) => void;
+  setThumbnail: (mediaId: string) => void;
+  /** Returns the public URL of the chosen thumbnail (or first approved photo). */
+  selectThumbnailUrl: () => string | null;
+  /** Returns all approved photo URLs with the thumbnail first. */
+  orderedPhotoUrls: () => string[];
 
   // Video actions
   uploadVideo: (file: File) => Promise<void>;
@@ -184,9 +194,35 @@ export const useMediaUpload = create<MediaUploadState>((set, get) => ({
   walletAddr: "",
   photos: [],
   video: null,
+  thumbnailMediaId: null,
 
   setProposalId: (id) => set({ proposalId: id }),
   setWalletAddr: (addr) => set({ walletAddr: addr }),
+
+  setThumbnail: (mediaId) => set({ thumbnailMediaId: mediaId }),
+
+  selectThumbnailUrl: () => {
+    const { photos, thumbnailMediaId } = get();
+    const approved = photos.filter(
+      (p) => p.status === "approved" && p.thumbnailUrl,
+    );
+    if (approved.length === 0) return null;
+    const chosen =
+      approved.find((p) => p.mediaId === thumbnailMediaId) ?? approved[0];
+    return chosen.thumbnailUrl ?? null;
+  },
+
+  orderedPhotoUrls: () => {
+    const { photos, thumbnailMediaId } = get();
+    const approved = photos.filter(
+      (p) => p.status === "approved" && p.thumbnailUrl,
+    );
+    const idx = approved.findIndex((p) => p.mediaId === thumbnailMediaId);
+    const ordered = idx > 0
+      ? [approved[idx], ...approved.slice(0, idx), ...approved.slice(idx + 1)]
+      : approved;
+    return ordered.map((p) => p.thumbnailUrl as string);
+  },
 
   uploadPhoto: async (file: File) => {
     // Wrapper for single file — delegates to uploadPhotos
@@ -241,27 +277,38 @@ export const useMediaUpload = create<MediaUploadState>((set, get) => ({
             (pct) => updatePhoto({ progress: pct }),
           );
 
-          set({
-            photos: get().photos.map((p) =>
-              p.mediaId === tempId
-                ? {
-                    ...p,
-                    mediaId: result.mediaId,
-                    r2Key: result.r2Key,
-                    progress: 100,
-                    status:
-                      result.status === "approved"
-                        ? ("approved" as const)
-                        : ("rejected" as const),
-                    thumbnailUrl: result.thumbnailUrl,
-                    error:
-                      result.status === "rejected"
-                        ? "Content flagged by moderation"
-                        : null,
-                  }
-                : p,
-            ),
-          });
+          const updatedPhotos = get().photos.map((p) =>
+            p.mediaId === tempId
+              ? {
+                  ...p,
+                  mediaId: result.mediaId,
+                  r2Key: result.r2Key,
+                  progress: 100,
+                  status:
+                    result.status === "approved"
+                      ? ("approved" as const)
+                      : ("rejected" as const),
+                  thumbnailUrl: result.thumbnailUrl,
+                  error:
+                    result.status === "rejected"
+                      ? "Content flagged by moderation"
+                      : null,
+                }
+              : p,
+          );
+          // First approved photo becomes the default thumbnail.
+          const currentThumbnail = get().thumbnailMediaId;
+          const stillExists =
+            currentThumbnail &&
+            updatedPhotos.some(
+              (p) =>
+                p.mediaId === currentThumbnail && p.status === "approved",
+            );
+          const nextThumbnail = stillExists
+            ? currentThumbnail
+            : updatedPhotos.find((p) => p.status === "approved")?.mediaId ??
+              null;
+          set({ photos: updatedPhotos, thumbnailMediaId: nextThumbnail });
         } catch (err) {
           updatePhoto({
             status: "error" as const,
@@ -276,7 +323,13 @@ export const useMediaUpload = create<MediaUploadState>((set, get) => ({
   },
 
   removePhoto: (mediaId) => {
-    set({ photos: get().photos.filter((p) => p.mediaId !== mediaId) });
+    const remaining = get().photos.filter((p) => p.mediaId !== mediaId);
+    const currentThumbnail = get().thumbnailMediaId;
+    const nextThumbnail =
+      currentThumbnail === mediaId
+        ? remaining.find((p) => p.status === "approved")?.mediaId ?? null
+        : currentThumbnail;
+    set({ photos: remaining, thumbnailMediaId: nextThumbnail });
   },
 
   uploadVideo: async (file: File) => {
@@ -380,5 +433,12 @@ export const useMediaUpload = create<MediaUploadState>((set, get) => ({
     return photos.some((p) => p.status === "rejected") || video?.status === "rejected";
   },
 
-  reset: () => set({ proposalId: "", walletAddr: "", photos: [], video: null }),
+  reset: () =>
+    set({
+      proposalId: "",
+      walletAddr: "",
+      photos: [],
+      video: null,
+      thumbnailMediaId: null,
+    }),
 }));
