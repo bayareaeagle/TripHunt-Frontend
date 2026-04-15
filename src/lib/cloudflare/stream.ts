@@ -1,5 +1,6 @@
+import { cfAuthHeaders } from "./auth";
+
 const ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID!;
-const API_TOKEN = process.env.CLOUDFLARE_API_TOKEN!;
 
 const STREAM_BASE = `https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/stream`;
 
@@ -28,7 +29,7 @@ export async function createDirectUpload(
   const res = await fetch(`${STREAM_BASE}/direct_upload`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${API_TOKEN}`,
+      ...cfAuthHeaders(),
       "Content-Type": "application/json",
     },
     body: JSON.stringify(body),
@@ -46,7 +47,7 @@ export async function createDirectUpload(
 /** Get video details from Stream. */
 export async function getVideo(uid: string): Promise<StreamVideo> {
   const res = await fetch(`${STREAM_BASE}/${uid}`, {
-    headers: { Authorization: `Bearer ${API_TOKEN}` },
+    headers: cfAuthHeaders(),
   });
 
   if (!res.ok) {

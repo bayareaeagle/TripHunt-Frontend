@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 import { VotePanel } from "@/components/voting/VotePanel";
 import { ProposalActions } from "@/components/voting/ProposalActions";
+import { WalletConnectButton } from "@/components/wallet/WalletConnectButton";
 import { useProposals, type D1Proposal } from "@/hooks/useProposals";
 import {
   fetchUserVotes,
@@ -64,7 +65,12 @@ function D1ProposalCard({
   }, [proposal.id, walletAddress, proposal.votesFor, proposal.votesAgainst]);
 
   const castVote = async (direction: "for" | "against") => {
-    if (!walletAddress || voting || userVote) return;
+    // Hard gate: never send a vote to the API without a connected wallet.
+    if (!walletAddress) {
+      setError("Connect your wallet to vote.");
+      return;
+    }
+    if (voting || userVote) return;
     setVoting(true);
     setError(null);
     try {
@@ -230,8 +236,11 @@ function D1ProposalCard({
             </div>
           )
         ) : (
-          <div className="rounded-lg bg-slate-50 py-3 text-center text-sm text-muted-foreground">
-            Connect wallet to vote
+          <div className="flex flex-col items-center gap-2 rounded-lg bg-slate-50 py-3">
+            <p className="text-sm text-muted-foreground">
+              Connect your wallet to vote
+            </p>
+            <WalletConnectButton />
           </div>
         )}
 

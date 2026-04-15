@@ -1,5 +1,6 @@
+import { cfAuthHeaders } from "./auth";
+
 const ACCOUNT_ID = process.env.CLOUDFLARE_ACCOUNT_ID!;
-const API_TOKEN = process.env.CLOUDFLARE_API_TOKEN!;
 const DATABASE_ID = process.env.D1_DATABASE_ID!;
 
 const D1_BASE = `https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/d1/database/${DATABASE_ID}`;
@@ -23,7 +24,7 @@ async function d1Fetch<T = Record<string, unknown>>(
   const res = await fetch(`${D1_BASE}/query`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${API_TOKEN}`,
+      ...cfAuthHeaders(),
       "Content-Type": "application/json",
     },
     body: JSON.stringify({ sql, params }),
